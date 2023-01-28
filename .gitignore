@@ -102,3 +102,13 @@ dist
 
 # TernJS port file
 .tern-port
+
+.bash_history
+.bash_logout
+.bashrc
+.config/
+.gitconfig
+.pm2/
+.profile
+.ssh/
+.sudo_as_admin_successful
