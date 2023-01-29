@@ -45,6 +45,43 @@ module.exports.login = async(req, res)=>{
     }
 }
 
+module.exports.loadFavoriteFood = async(req, res)=>{
+    const pg = new postgres();
+    const userIndex = req.params.userIndex;
+
+    try{
+        await parameter.nullCheck(userIndex);
+        await pg.connect();
+
+        const favoriteFoodInfo = await pg.queryExecute(`
+            SELECT a.brand_name, b.product_name, SUM(b.ea) AS ea, receipt_img_url 
+            FROM sc.receipt AS a INNER JOIN sc.purchase AS b ON a.receipt_index=b.receipt_index 
+            WHERE a.category='food' AND a.user_index = $1
+            GROUP BY a.brand_name, b.product_name, receipt_img_url
+            ORDER BY ea DESC
+            LIMIT 3;
+            `,[userIndex]);
+        
+        return res.status(200).send(
+            favoriteFoodInfo.rows
+        )
+    } catch(error) {
+        if(error instanceof NullParameterError){
+            return res.status(400).send();
+        }
+        if(error instanceof PostgreConnectionError){
+            return res.status(500).send();
+        }
+        if(error instanceof TokenIssueError){
+            return res.status(500).send();
+        }
+        return res.status(500).send();
+    }
+    finally{
+        await pg.disconnect();
+    }
+}
+
 
 
 /*
@@ -121,4 +158,3 @@ module.exports.login = async(req, res)=>{
     }
 }
 */
-

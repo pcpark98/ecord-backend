@@ -5,9 +5,9 @@ const { env } = require('process');
 const options = {
     swaggerDefinition: {
         info: {
-            title: 'Test API',
+            title: 'Ecord API',
             version: '1.0.0',
-            description: 'Test API with express',
+            description: 'Ecord API with express',
         },
         host: process.env.HOST,
         basePath: '/'

@@ -4,19 +4,20 @@ const fs = require('fs');
 const parameter = require('../utils/parameter');
 const multer = require('multer');
 const path = require('path');
+const imageUtil = require('../utils/image');
+const util = require('util');
 
 module.exports.loadReceipts = async(req, res) => {
     const pg = new postgres();
     const userIndex = req.params.userIndex;
-    console.log(userIndex);
 
     try{
         await parameter.nullCheck(userIndex);
         await pg.connect();
 
         const receiptInfo = await pg.queryExecute(`
-            SELECT * FROM sc.receipt WHERE user_index = $1
-            ORDER BY receipt_index DESC;
+        SELECT receipt.receipt_index, brand_name, product_name, total_cost,date, ea, receipt_img_url FROM sc.receipt INNER JOIN (SELECT receipt_index, array_agg(product_name) AS product_name, array_agg(cost) AS cost 
+        ,array_agg(ea) AS ea FROM sc.purchase GROUP BY receipt_index) AS  pc ON receipt.user_index = $1 AND receipt.receipt_index = pc.receipt_index;
         `,[userIndex]);
 
         return res.status(200).send(
@@ -104,7 +105,7 @@ module.exports.createReceipt = async(req, res) => {
     }
 }
 
-module.exports.loadReceiptsImage = async(req,res) =>{
+module.exports.loadImage = async(req,res) =>{
     const fileName = req.params.fileName;
     try{
         await parameter.nullCheck(fileName);
@@ -133,8 +134,8 @@ const fileFilter = (req, files, callback) =>{
         callback(new ImageFileExtensionError())
     }
 }
-/*
-module.exports.uploadBannerImage = async(req,res) =>{
+
+module.exports.uploadImage = async(req,res) =>{
     const storage = multer.diskStorage({
         destination: (req, files, cb) => {
           cb(null, path.join(__dirname, '../images')) // cb 콜백함수를 통해 전송된 파일 저장 디렉토리 설정
@@ -153,33 +154,21 @@ module.exports.uploadBannerImage = async(req,res) =>{
     const pg = new postgres();
 
     try{
-        const upload = util.promisify(Multer.fields([{ name: 'bannerTitle', maxCount: 1 }, { name: 'content', maxCount: 1 }]));
+        const upload = util.promisify(Multer.fields([{ name: 'content', maxCount: 1 }]));
         await upload(req,res);
 
-        const {bannerOrder, isOpened, title} = req.body;
-        const titlePath = req.files['bannerTitle'][0].filename;
+        const {receiptIndex} = req.params;
         const contentPath = req.files['content'][0].filename;
 
-        await imageUtil.resizingImage(req.files['bannerTitle'][0].path, 'banners', req.files['bannerTitle'][0].filename);
-        await imageUtil.resizingImage(req.files['content'][0].path, 'banners', req.files['content'][0].filename);
-
-        await parameter.nullCheck(bannerOrder, isOpened, title, titlePath, contentPath);
+        await parameter.nullCheck(receiptIndex, contentPath);
 
         await pg.connect();
         await pg.queryUpdate(`BEGIN;`,[]);
         await pg.queryUpdate(
             `
-            UPDATE knock.banner SET banner_order = banner_order + 1 WHERE banner_order >= $1;
+            UPDATE sc.receipt SET content_img_url = $1 WHERE receipt_index = $2;
             `
-        ,[bannerOrder]);
-
-        await pg.queryUpdate(
-            `
-            INSERT INTO knock.banner (title, title_img_url, content_img_url, banner_order, is_opened)
-            VALUES ($1, $2, $3, (SELECT CASE WHEN (SELECT MAX(banner_order) FROM knock.banner WHERE is_opened = true) < $4::smallint THEN (SELECT MAX(banner_order) FROM knock.banner WHERE is_opened = true) +1 
-            WHEN (SELECT MAX(banner_order) FROM knock.banner WHERE is_opened = true) IS NULL THEN 1 ELSE $4 END), $5);
-            `
-            ,[title, '/images/banners/'+titlePath, '/images/banners/'+contentPath, bannerOrder, isOpened])
+        ,['/images/' + contentPath, receiptIndex]);
 
         await pg.queryUpdate('COMMIT;',[]);
 
@@ -208,4 +197,3 @@ module.exports.uploadBannerImage = async(req,res) =>{
         await pg.disconnect();
     }
 }
-*/
