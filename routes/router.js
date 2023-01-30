@@ -237,6 +237,80 @@ router.get('/users/:userIndex/receipts/:receiptIndex', jwtToken.verifyToken, rec
 
 /**
  * @swagger
+ *  /users/:userIndex/receipts/date:
+ *    post:
+ *      tags: [Receipt]
+ *      summary: userIndex 유저의 date 날짜의 모든 영수증 조회
+ *      produces:
+ *      - application/json
+ *      parameters:
+ *        - in: "header"
+ *          name: "token"
+ *          description: "유저 토큰"
+ *          required: true
+ *          schema:
+ *              type: string
+ *              properties:
+ *                  token:
+ *                      type: string
+ *        - in: "path"
+ *          name: "userIndex"
+ *          description: "유저 인덱스"
+ *          required: true
+ *          schema:
+ *              type: number
+ *              properties:
+ *                  user_index:
+ *                      type: number
+ *        - in: "body"
+ *          name: "date"
+ *          description: "조회할 날짜"
+ *          required: true
+ *          schema:
+ *              type: string
+ *              properties:
+ *                  date:
+ *                      type: string
+ *                      example: '2023.01.29'
+ *      responses:
+ *       200:
+ *        description: date 날짜에 해당하는 영수증 정보
+ *        schema:
+ *            type: object
+ *            properties:
+ *                ReceiptInfo:
+ *                    type: object
+ *                    properties:
+ *                        receipt_index:
+ *                            type: number
+ *                            example: 1
+ *                        brand_name:
+ *                            type: string
+ *                            example: '스타벅스'
+ *                        date:
+ *                            type: string
+ *                            example: '23.01.29'
+ *                        total_cost:
+ *                            type: string
+ *                            example: '5,600원'
+ *                        receipt_img_url:
+ *                            type: string
+ *                            example: '파리바게트_로고.png'
+ *                        product_name:
+ *                            type: Array
+ *                            example: ['슈크림빵', '정통바게뜨']
+ *                        ea:
+ *                            type: Array
+ *                            example: [1, 1]
+ *       400:
+ *        description: receiptIndex 또는 date 누락
+ *       500:
+ *        description: Server Error
+ */
+router.post('/users/:userIndex/receipts/date', jwtToken.verifyToken, receipt.loadReceiptsByDate);
+
+/**
+ * @swagger
  *  /users/:userIndex/receipts:
  *    get:
  *      tags: [Receipt]

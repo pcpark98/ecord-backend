@@ -17,7 +17,8 @@ module.exports.loadReceipts = async(req, res) => {
 
         const receiptInfo = await pg.queryExecute(`
         SELECT receipt.receipt_index, brand_name, product_name, total_cost,date, ea, receipt_img_url FROM sc.receipt INNER JOIN (SELECT receipt_index, array_agg(product_name) AS product_name, array_agg(cost) AS cost 
-        ,array_agg(ea) AS ea FROM sc.purchase GROUP BY receipt_index) AS  pc ON receipt.user_index = $1 AND receipt.receipt_index = pc.receipt_index;
+        ,array_agg(ea) AS ea FROM sc.purchase GROUP BY receipt_index) AS  pc ON receipt.user_index = $1 AND receipt.receipt_index = pc.receipt_index
+        ORDER BY receipt_index DESC;
         `,[userIndex]);
 
         return res.status(200).send(
@@ -191,6 +192,42 @@ module.exports.uploadImage = async(req,res) =>{
             return res.status(500).send();
         }
 
+        return res.status(500).send();
+    }
+    finally{
+        await pg.disconnect();
+    }
+}
+
+module.exports.loadReceiptsByDate = async(req, res) => {
+    const pg = new postgres();
+    const userIndex = req.params.userIndex;
+    const date = req.body.date;
+    try{
+        await parameter.nullCheck(userIndex, date);
+        await pg.connect();
+
+        const receiptInfo = await pg.queryExecute(`
+        SELECT receipt.receipt_index, brand_name, product_name, total_cost, date, ea, receipt_img_url
+        FROM sc.receipt INNER JOIN (
+            SELECT receipt_index, array_agg(product_name) AS product_name, array_agg(cost) AS cost, array_agg(ea) AS ea
+            FROM sc.purchase
+            GROUP BY receipt_index) AS pc 
+            ON receipt.user_index = $1 AND receipt.receipt_index = pc.receipt_index
+        WHERE receipt.date = $2
+        ORDER BY receipt_index DESC;
+        `,[userIndex, date]);
+
+        return res.status(200).send(
+            receiptInfo.rows
+        )
+    } catch(error) {
+        if(error instanceof NullParameterError){
+            return res.status(400).send();
+        }
+        if(error instanceof PostgreConnectionError){
+            return res.status(500).send();
+        }
         return res.status(500).send();
     }
     finally{

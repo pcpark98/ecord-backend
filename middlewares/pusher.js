@@ -24,7 +24,7 @@ const dummy = [
         "date" : "2023.01.30",
         "approval_number" : "00838517",
         "original_number" : "NS1231242379",
-        "total_cost" : "15,000",
+        "total_cost" : "5,600",
         "category" : "food",
         "receipt_img_url" : "/images/파리바게트_로고.png",
         "product_name" : ["슈크림빵", "정통바게뜨"],
